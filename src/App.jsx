@@ -12,6 +12,7 @@ import TimeClock from './components/TimeClock';
 import FilesScreen from './components/FilesScreen';
 import TeamsScreen from './components/TeamsScreen';
 import DailyLog from './components/DailyLog';
+import KnowledgeBuilder from './components/KnowledgeBuilder';
 import ChatWidget from './components/ChatWidget';
 
 // ============================================================================
@@ -247,6 +248,9 @@ const PhoenixCommandApp = () => {
           onSubmit={handleSubmitLog}
           onNavigate={setCurrentScreen}
         />
+      )}
+      {currentScreen === 'knowledgebuilder' && (
+        <KnowledgeBuilder token={null} />
       )}
 
       <ChatWidget

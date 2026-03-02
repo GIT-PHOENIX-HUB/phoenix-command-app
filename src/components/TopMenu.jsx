@@ -1,5 +1,5 @@
 import React from 'react';
-import { Clock, FileText, Users } from 'lucide-react';
+import { BookOpen, Clock, FileText, Users } from 'lucide-react';
 
 /**
  * TopMenu - Persistent red header with logo, user info, and nav buttons.
@@ -128,6 +128,7 @@ const TopMenu = ({ userName, currentScreen, onNavigate, onLogout }) => (
     }}>
       {[
         { id: 'dashboard', label: 'HOME', icon: null },
+        { id: 'knowledgebuilder', label: 'KNOWLEDGE', icon: BookOpen },
         { id: 'files', label: 'FILES', icon: FileText },
         { id: 'teams', label: 'TEAMS', icon: Users },
         { id: 'timeclock', label: 'TIME CLOCK', icon: Clock }

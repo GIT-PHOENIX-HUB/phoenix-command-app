@@ -1,4 +1,4 @@
-export type Screen = 'splash' | 'dashboard' | 'timeclock' | 'files' | 'teams' | 'dailylog';
+export type Screen = 'splash' | 'dashboard' | 'timeclock' | 'files' | 'teams' | 'dailylog' | 'knowledgebuilder';
 
 export interface UserProfile {
   displayName: string;
