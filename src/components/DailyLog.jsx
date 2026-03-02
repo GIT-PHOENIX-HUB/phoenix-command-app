@@ -1,43 +1,129 @@
-import React, { useState } from 'react';
-import { MapPin, Camera } from 'lucide-react';
+import React, { useState, useContext } from 'react';
 import { glassCard, inputStyle, screenContainer, redGlowOverlay, screenTitle, sectionHeader, labelStyle, primaryButton } from '../theme';
-import { MAX_DAILY_LOG_LENGTH } from '../api/phoenix-api';
+import { LanguageContext } from '../i18n/LanguageContext';
 
 /**
- * DailyLog - Form to log daily work with customer, job, hours, notes, and photos.
+ * DailyLog - Paper-form style daily work log.
  *
  * Props:
- *   customers   - Array of customer name strings
- *   jobs        - Array of job number strings
- *   onSubmit    - (logData) => Promise<void>  — called with { customer, jobNumber, hours, workCompleted, issues }
+ *   userName    - Authenticated user's display name (auto-filled)
+ *   onSubmit    - (logData) => Promise<void>
  *   onNavigate  - (screenId) => void
- *
- * Note: This component owns its own form state (logData, submitting) since it's
- * local to the form and doesn't need to persist when navigating away.
  */
-const DailyLog = ({ customers, jobs, onSubmit, onNavigate }) => {
-  const [logData, setLogData] = useState({
-    customer: '',
-    jobNumber: '',
-    hours: 0,
-    workCompleted: '',
-    issues: ''
-  });
+const createEmptyRow = () => ({ taskItem: '', qty: 0, estTime: '', description: '' });
+
+const WorkTable = ({ rows, onRowChange, onAddRow, t }) => (
+  <div>
+    <div style={{
+      display: 'grid',
+      gridTemplateColumns: '28px 1fr 60px 80px 1fr',
+      gap: '6px',
+      marginBottom: '6px'
+    }}>
+      <div style={{ ...labelStyle, textAlign: 'center' }}>#</div>
+      <div style={labelStyle}>{t('log.taskItem')}</div>
+      <div style={labelStyle}>{t('log.qty')}</div>
+      <div style={labelStyle}>{t('log.estTime')}</div>
+      <div style={labelStyle}>{t('log.description')}</div>
+    </div>
+    {rows.map((row, i) => (
+      <div key={i} style={{
+        display: 'grid',
+        gridTemplateColumns: '28px 1fr 60px 80px 1fr',
+        gap: '6px',
+        marginBottom: '6px'
+      }}>
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          fontSize: '12px',
+          color: 'rgba(255,255,255,0.4)',
+          fontWeight: '600'
+        }}>{i + 1}</div>
+        <input
+          type="text"
+          value={row.taskItem}
+          onChange={(e) => onRowChange(i, 'taskItem', e.target.value)}
+          style={{ ...inputStyle, padding: '8px 10px', fontSize: '12px' }}
+        />
+        <input
+          type="number"
+          value={row.qty}
+          onChange={(e) => onRowChange(i, 'qty', e.target.value)}
+          style={{ ...inputStyle, padding: '8px 10px', fontSize: '12px' }}
+          min="0"
+        />
+        <input
+          type="text"
+          value={row.estTime}
+          onChange={(e) => onRowChange(i, 'estTime', e.target.value)}
+          style={{ ...inputStyle, padding: '8px 10px', fontSize: '12px' }}
+          placeholder="1 hr"
+        />
+        <input
+          type="text"
+          value={row.description}
+          onChange={(e) => onRowChange(i, 'description', e.target.value)}
+          style={{ ...inputStyle, padding: '8px 10px', fontSize: '12px' }}
+        />
+      </div>
+    ))}
+    <button
+      onClick={onAddRow}
+      style={{
+        marginTop: '8px',
+        padding: '8px 16px',
+        background: 'rgba(212,175,55,0.15)',
+        border: '1px solid rgba(212,175,55,0.4)',
+        borderRadius: '6px',
+        color: '#D4AF37',
+        fontSize: '12px',
+        fontWeight: '600',
+        cursor: 'pointer',
+        letterSpacing: '0.5px'
+      }}
+    >
+      + {t('log.addRow')}
+    </button>
+  </div>
+);
+
+const DailyLog = ({ userName = '', onSubmit, onNavigate }) => {
+  const { t } = useContext(LanguageContext);
+  const today = new Date().toLocaleDateString('en-US', { year: 'numeric', month: '2-digit', day: '2-digit' });
+
+  const [jobAddress, setJobAddress] = useState('');
+  const [phase, setPhase] = useState('rough-in');
+  const [completedWork, setCompletedWork] = useState(Array.from({ length: 5 }, createEmptyRow));
+  const [incompleteWork, setIncompleteWork] = useState(Array.from({ length: 2 }, createEmptyRow));
+  const [notes, setNotes] = useState('');
+  const [materialNeeded, setMaterialNeeded] = useState('');
+  const [techSigned, setTechSigned] = useState(false);
+  const [leadSigned, setLeadSigned] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
+  const updateRow = (setter) => (index, field, value) => {
+    setter(prev => prev.map((row, i) => i === index ? { ...row, [field]: value } : row));
+  };
+
   const handleSubmitLog = async () => {
-    if (!logData.customer || !logData.jobNumber) {
-      alert('Please select a customer and job number.');
-      return;
-    }
-    if (!logData.workCompleted.trim()) {
-      alert('Please describe the work completed.');
-      return;
-    }
     try {
       setSubmitting(true);
-      await onSubmit(logData);
-      alert('Log submitted successfully!');
+      await onSubmit({
+        date: today,
+        technicianName: userName,
+        jobAddress,
+        phase,
+        completedWork,
+        incompleteWork,
+        notes,
+        materialNeeded,
+        techSignature: techSigned ? 'signed' : '',
+        leadSignature: leadSigned ? 'signed' : '',
+        photos: []
+      });
+      alert(t('log.submit') + ' ✓');
       onNavigate('dashboard');
     } catch (error) {
       console.error('Submit failed:', error);
@@ -47,211 +133,228 @@ const DailyLog = ({ customers, jobs, onSubmit, onNavigate }) => {
     }
   };
 
+  const phaseButtonStyle = (isActive) => ({
+    flex: 1,
+    padding: '10px',
+    background: isActive ? 'linear-gradient(135deg, #D4AF37, #B8960B)' : 'rgba(255,255,255,0.05)',
+    border: isActive ? 'none' : '1px solid rgba(255,255,255,0.2)',
+    borderRadius: '8px',
+    color: isActive ? '#1a1a1a' : 'rgba(255,255,255,0.7)',
+    fontSize: '13px',
+    fontWeight: '700',
+    cursor: 'pointer',
+    letterSpacing: '0.5px',
+    textTransform: 'uppercase'
+  });
+
   return (
     <div style={screenContainer}>
       <div style={redGlowOverlay} />
 
-      <h2 style={{ ...screenTitle, marginBottom: '8px' }}>LOG TODAY'S WORK</h2>
+      <h2 style={{ ...screenTitle, marginBottom: '8px' }}>{t('log.title')}</h2>
 
+      {/* Instructions */}
       <div style={{
-        color: '#D4AF37',
-        fontSize: '14px',
-        marginBottom: '24px',
+        background: 'rgba(212,175,55,0.08)',
+        border: '1px solid rgba(212,175,55,0.2)',
+        borderRadius: '10px',
+        padding: '14px',
+        marginBottom: '20px',
         position: 'relative',
         zIndex: 1
       }}>
-        {new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+        {[1,2,3,4,5,6,7,8].map(n => (
+          <div key={n} style={{ fontSize: '11px', color: 'rgba(255,255,255,0.55)', marginBottom: '4px' }}>
+            {n}. {t(`log.instructions.${n}`)}
+          </div>
+        ))}
       </div>
 
-      {/* Location & Job */}
+      {/* Header Section */}
       <div style={glassCard}>
-        <h3 style={sectionHeader}>
-          <MapPin size={18} color="#D4AF37" />
-          LOCATION & JOB
-        </h3>
-
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
           <div>
-            <label style={labelStyle}>Customer/Site</label>
-            <select
-              value={logData.customer}
-              onChange={(e) => setLogData({...logData, customer: e.target.value})}
-              style={inputStyle}
-            >
-              <option value="">Select customer...</option>
-              {customers.length > 0 ? customers.map((c, i) => (
-                <option key={i} value={c}>{c}</option>
-              )) : (
-                <option disabled>No customers loaded</option>
-              )}
-            </select>
-          </div>
-
-          <div>
-            <label style={labelStyle}>Job Number</label>
-            <select
-              value={logData.jobNumber}
-              onChange={(e) => setLogData({...logData, jobNumber: e.target.value})}
-              style={inputStyle}
-            >
-              <option value="">Select job...</option>
-              {jobs.length > 0 ? jobs.map((j, i) => (
-                <option key={i} value={j}>{j}</option>
-              )) : (
-                <option disabled>No jobs loaded</option>
-              )}
-            </select>
-          </div>
-
-          <div>
-            <label style={labelStyle}>Hours Worked</label>
+            <label style={labelStyle}>{t('log.techName')}</label>
             <input
-              type="number"
-              step="0.25"
-              value={logData.hours}
-              onChange={(e) => setLogData({...logData, hours: parseFloat(e.target.value)})}
+              type="text"
+              value={userName}
+              readOnly
+              style={{ ...inputStyle, color: 'rgba(255,255,255,0.5)', cursor: 'default' }}
+            />
+          </div>
+          <div>
+            <label style={labelStyle}>{t('log.date')}</label>
+            <input
+              type="text"
+              value={today}
+              readOnly
+              style={{ ...inputStyle, color: 'rgba(255,255,255,0.5)', cursor: 'default' }}
+            />
+          </div>
+          <div>
+            <label style={labelStyle}>{t('log.jobAddress')}</label>
+            <input
+              type="text"
+              value={jobAddress}
+              onChange={(e) => setJobAddress(e.target.value)}
               style={inputStyle}
             />
-            <div style={{
-              fontSize: '11px',
-              color: 'rgba(255,255,255,0.4)',
-              marginTop: '6px'
-            }}>
-              Auto-calculated from clock times
+          </div>
+          <div>
+            <label style={labelStyle}>{t('log.phase')}</label>
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <button style={phaseButtonStyle(phase === 'rough-in')} onClick={() => setPhase('rough-in')}>
+                {t('log.roughIn')}
+              </button>
+              <button style={phaseButtonStyle(phase === 'trim-out')} onClick={() => setPhase('trim-out')}>
+                {t('log.trimOut')}
+              </button>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Work Completed */}
+      {/* Completed Work Section */}
       <div style={glassCard}>
         <h3 style={sectionHeader}>
-          <span style={{ fontSize: '18px' }}>📝</span>
-          WORK COMPLETED
+          <span style={{ fontSize: '18px' }}>✅</span>
+          {t('log.completedWork')}
         </h3>
-        <textarea
-          placeholder="Describe the work you completed today..."
-          rows={6}
-          value={logData.workCompleted}
-          onChange={(e) => setLogData({...logData, workCompleted: e.target.value})}
-          maxLength={MAX_DAILY_LOG_LENGTH}
-          style={{
-            ...inputStyle,
-            fontFamily: 'inherit',
-            resize: 'vertical'
-          }}
+        <WorkTable
+          rows={completedWork}
+          onRowChange={updateRow(setCompletedWork)}
+          onAddRow={() => setCompletedWork(prev => [...prev, createEmptyRow()])}
+          t={t}
         />
       </div>
 
-      {/* Photos */}
-      <div style={glassCard}>
-        <h3 style={sectionHeader}>
-          <Camera size={18} color="#D4AF37" />
-          MATERIALS & PHOTOS
+      {/* Incomplete Work Section */}
+      <div style={{
+        ...glassCard,
+        background: 'linear-gradient(165deg, rgba(255,200,0,0.06) 0%, rgba(255,255,255,0.02) 50%, rgba(255,200,0,0.04) 100%)',
+        border: '1px solid rgba(255,200,0,0.2)'
+      }}>
+        <h3 style={{ ...sectionHeader, color: '#FFD700' }}>
+          <span style={{ fontSize: '18px' }}>⚠️</span>
+          {t('log.incompleteWork')}
         </h3>
-        <div style={{
-          display: 'flex',
-          gap: '12px',
-          flexWrap: 'wrap'
-        }}>
-          <button style={{
-            padding: '14px 20px',
-            background: 'rgba(255,255,255,0.05)',
-            border: '1px dashed rgba(212,175,55,0.4)',
-            borderRadius: '10px',
-            fontSize: '13px',
-            fontWeight: '600',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            color: '#FFFFFF',
-            transition: 'all 0.2s ease'
-          }}>
-            📷 Take Photo
-          </button>
-          <button style={{
-            padding: '14px 20px',
-            background: 'rgba(255,255,255,0.05)',
-            border: '1px dashed rgba(212,175,55,0.4)',
-            borderRadius: '10px',
-            fontSize: '13px',
-            fontWeight: '600',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            color: '#FFFFFF',
-            transition: 'all 0.2s ease'
-          }}>
-            📎 Upload
-          </button>
+        <WorkTable
+          rows={incompleteWork}
+          onRowChange={updateRow(setIncompleteWork)}
+          onAddRow={() => setIncompleteWork(prev => [...prev, createEmptyRow()])}
+          t={t}
+        />
+      </div>
+
+      {/* Notes Section */}
+      <div style={glassCard}>
+        <div style={{ display: 'grid', gridTemplateColumns: '3fr 2fr', gap: '16px' }}>
+          <div>
+            <label style={labelStyle}>{t('log.notes')}</label>
+            <textarea
+              rows={5}
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              style={{ ...inputStyle, fontFamily: 'inherit', resize: 'vertical' }}
+            />
+          </div>
+          <div>
+            <label style={labelStyle}>{t('log.materialNeeded')}</label>
+            <textarea
+              rows={5}
+              value={materialNeeded}
+              onChange={(e) => setMaterialNeeded(e.target.value)}
+              style={{ ...inputStyle, fontFamily: 'inherit', resize: 'vertical' }}
+            />
+          </div>
         </div>
       </div>
 
-      {/* Issues */}
+      {/* Signatures Section */}
       <div style={glassCard}>
         <h3 style={sectionHeader}>
-          <span style={{ fontSize: '18px' }}>⚠️</span>
-          ISSUES / FOLLOW-UP
+          <span style={{ fontSize: '18px' }}>✍️</span>
+          {t('log.signatures')}
         </h3>
-        <textarea
-          placeholder="Any issues or follow-up needed?"
-          rows={4}
-          value={logData.issues}
-          onChange={(e) => setLogData({...logData, issues: e.target.value})}
-          maxLength={MAX_DAILY_LOG_LENGTH}
-          style={{
-            ...inputStyle,
-            fontFamily: 'inherit',
-            resize: 'vertical',
-            borderColor: 'rgba(255,100,100,0.2)'
-          }}
-        />
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+          <div>
+            <label style={labelStyle}>{t('log.techSignature')}</label>
+            <label style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              cursor: 'pointer',
+              padding: '12px',
+              background: 'rgba(255,255,255,0.04)',
+              border: techSigned ? '1px solid rgba(0,201,167,0.5)' : '1px solid rgba(255,255,255,0.15)',
+              borderRadius: '8px'
+            }}>
+              <input
+                type="checkbox"
+                checked={techSigned}
+                onChange={(e) => setTechSigned(e.target.checked)}
+                style={{ width: '16px', height: '16px', cursor: 'pointer' }}
+              />
+              <span style={{ fontSize: '13px', color: techSigned ? '#00C9A7' : 'rgba(255,255,255,0.5)' }}>
+                {techSigned ? '✓ Signed' : userName || '—'}
+              </span>
+            </label>
+          </div>
+          <div>
+            <label style={labelStyle}>{t('log.leadSignature')}</label>
+            <label style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              cursor: 'pointer',
+              padding: '12px',
+              background: 'rgba(255,255,255,0.04)',
+              border: leadSigned ? '1px solid rgba(0,201,167,0.5)' : '1px solid rgba(255,255,255,0.15)',
+              borderRadius: '8px'
+            }}>
+              <input
+                type="checkbox"
+                checked={leadSigned}
+                onChange={(e) => setLeadSigned(e.target.checked)}
+                style={{ width: '16px', height: '16px', cursor: 'pointer' }}
+              />
+              <span style={{ fontSize: '13px', color: leadSigned ? '#00C9A7' : 'rgba(255,255,255,0.5)' }}>
+                {leadSigned ? '✓ Signed' : '—'}
+              </span>
+            </label>
+          </div>
+        </div>
       </div>
 
-      {/* Action Buttons */}
-      <div style={{
-        display: 'flex',
-        gap: '12px',
-        position: 'relative',
-        zIndex: 1
-      }}>
-        <button
-          style={{
-            flex: 1,
-            padding: '14px',
-            background: 'rgba(255,255,255,0.05)',
-            border: '1px solid rgba(255,255,255,0.2)',
-            color: '#FFFFFF',
-            borderRadius: '10px',
-            fontSize: '13px',
-            fontWeight: '700',
-            cursor: 'pointer',
-            textTransform: 'uppercase',
-            letterSpacing: '0.5px',
-            transition: 'all 0.2s ease'
-          }}
-        >
-          SAVE DRAFT
-        </button>
-        <button
-          onClick={handleSubmitLog}
-          disabled={submitting}
-          style={{
-            ...primaryButton,
-            flex: 2,
-            padding: '14px',
-            opacity: submitting ? 0.7 : 1,
-            cursor: submitting ? 'wait' : 'pointer',
-          }}
-        >
-          {submitting ? 'SUBMITTING...' : 'SUBMIT LOG'}
-        </button>
-      </div>
+      {/* Submit Button */}
+      <button
+        onClick={handleSubmitLog}
+        disabled={submitting}
+        style={{
+          width: '100%',
+          padding: '16px',
+          background: 'linear-gradient(135deg, #D4AF37, #B8960B)',
+          color: '#1a1a1a',
+          border: 'none',
+          borderRadius: '10px',
+          fontSize: '15px',
+          fontWeight: '700',
+          cursor: submitting ? 'wait' : 'pointer',
+          textTransform: 'uppercase',
+          letterSpacing: '1.5px',
+          opacity: submitting ? 0.7 : 1,
+          boxShadow: '0 4px 20px rgba(212,175,55,0.35)',
+          position: 'relative',
+          zIndex: 1,
+          marginBottom: '20px'
+        }}
+      >
+        {submitting ? '...' : t('log.submit')}
+      </button>
     </div>
   );
 };
 
 export default DailyLog;
+
 

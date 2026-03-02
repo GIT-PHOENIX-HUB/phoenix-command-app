@@ -3,6 +3,7 @@ import { useMsal, useIsAuthenticated } from '@azure/msal-react';
 import { InteractionStatus, InteractionRequiredAuthError } from '@azure/msal-browser';
 import { loginRequest, apiRequest } from './auth/msalConfig';
 import { clockInOut, submitDailyLog, askPhoenixAI, getCurrentLocation } from './api/phoenix-api';
+import { LanguageProvider } from './i18n/LanguageContext';
 
 // Components
 import SplashScreen from './components/SplashScreen';
@@ -209,6 +210,7 @@ const PhoenixCommandApp = () => {
   }
 
   return (
+    <LanguageProvider>
     <div style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
       <TopMenu
         userName={userName}
@@ -242,8 +244,7 @@ const PhoenixCommandApp = () => {
       {currentScreen === 'teams' && <TeamsScreen />}
       {currentScreen === 'dailylog' && (
         <DailyLog
-          customers={customers}
-          jobs={jobs}
+          userName={userName}
           onSubmit={handleSubmitLog}
           onNavigate={setCurrentScreen}
         />
@@ -258,6 +259,7 @@ const PhoenixCommandApp = () => {
         onSend={handleChatSend}
       />
     </div>
+    </LanguageProvider>
   );
 };
 

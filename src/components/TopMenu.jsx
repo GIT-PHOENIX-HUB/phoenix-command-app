@@ -1,5 +1,7 @@
-import React from 'react';
+import React, { useContext } from 'react';
 import { Clock, FileText, Users } from 'lucide-react';
+import { LanguageContext } from '../i18n/LanguageContext';
+import LanguageToggle from './LanguageToggle';
 
 /**
  * TopMenu - Persistent red header with logo, user info, and nav buttons.
@@ -10,7 +12,9 @@ import { Clock, FileText, Users } from 'lucide-react';
  *   onNavigate     - (screenId) => void
  *   onLogout       - Handler for logout button
  */
-const TopMenu = ({ userName, currentScreen, onNavigate, onLogout }) => (
+const TopMenu = ({ userName, currentScreen, onNavigate, onLogout }) => {
+  const { t } = useContext(LanguageContext);
+  return (
   <div style={{
     background: 'linear-gradient(180deg, rgba(255,26,26,0.98) 0%, rgba(200,20,20,0.95) 100%)',
     padding: '16px 24px',
@@ -60,14 +64,14 @@ const TopMenu = ({ userName, currentScreen, onNavigate, onLogout }) => (
             fontFamily: 'Cinzel, Georgia, serif',
             textShadow: '0 2px 4px rgba(0,0,0,0.3)'
           }}>
-            PHOENIX OPS
+            {t('app.name')}
           </div>
           <div style={{
             fontSize: '11px',
             color: '#D4AF37',
             letterSpacing: '1px'
           }}>
-            Command Center
+            {t('app.subtitle')}
           </div>
         </div>
       </div>
@@ -94,6 +98,7 @@ const TopMenu = ({ userName, currentScreen, onNavigate, onLogout }) => (
           {userName ? userName.split(' ').map(n => n[0]).join('') : 'U'}
         </div>
         <span style={{ fontWeight: '500' }}>{userName}</span>
+        <LanguageToggle />
         <button
           onClick={onLogout}
           style={{
@@ -115,7 +120,7 @@ const TopMenu = ({ userName, currentScreen, onNavigate, onLogout }) => (
             e.currentTarget.style.color = 'rgba(255,255,255,0.9)';
           }}
         >
-          Logout
+          {t('app.logout')}
         </button>
       </div>
     </div>
@@ -127,11 +132,11 @@ const TopMenu = ({ userName, currentScreen, onNavigate, onLogout }) => (
       flexWrap: 'wrap'
     }}>
       {[
-        { id: 'dashboard', label: 'HOME', icon: null },
-        { id: 'files', label: 'FILES', icon: FileText },
-        { id: 'teams', label: 'TEAMS', icon: Users },
-        { id: 'timeclock', label: 'TIME CLOCK', icon: Clock }
-      ].map(({ id, label, icon: Icon }) => (
+        { id: 'dashboard', labelKey: 'nav.home', icon: null },
+        { id: 'files', labelKey: 'nav.files', icon: FileText },
+        { id: 'teams', labelKey: 'nav.teams', icon: Users },
+        { id: 'timeclock', labelKey: 'nav.timeclock', icon: Clock }
+      ].map(({ id, labelKey, icon: Icon }) => (
         <button
           key={id}
           onClick={() => onNavigate(id)}
@@ -162,12 +167,13 @@ const TopMenu = ({ userName, currentScreen, onNavigate, onLogout }) => (
           }}
         >
           {Icon && <Icon size={16} />}
-          {label}
+          {t(labelKey)}
         </button>
       ))}
     </div>
   </div>
-);
+  );
+};
 
 export default TopMenu;
 

@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useContext } from 'react';
 import { Clock, ChevronRight } from 'lucide-react';
 import { glassCard, screenContainer, redGlowOverlay, screenTitle, sectionHeader } from '../theme';
+import { LanguageContext } from '../i18n/LanguageContext';
 
 /**
  * Dashboard - Home screen with time status, today's work, and quick stats.
@@ -20,11 +21,13 @@ const Dashboard = ({
   clockedIn, clockTime, todayHours, weekHours,
   jobsThisWeek, logsSubmitted, isLoading,
   onClockToggle, onNavigate
-}) => (
+}) => {
+  const { t } = useContext(LanguageContext);
+  return (
   <div style={screenContainer}>
     <div style={redGlowOverlay} />
 
-    <h2 style={screenTitle}>DASHBOARD</h2>
+    <h2 style={screenTitle}>{t('dashboard.title')}</h2>
 
     {/* Time Status Card */}
     <div style={glassCard}>
@@ -36,7 +39,7 @@ const Dashboard = ({
       }}>
         <h3 style={{ ...sectionHeader, margin: 0 }}>
           <Clock size={18} color="#D4AF37" />
-          TIME STATUS
+          {t('dashboard.timeStatus')}
         </h3>
         <span style={{
           width: '12px',
@@ -49,10 +52,10 @@ const Dashboard = ({
 
       <div style={{ marginBottom: '16px' }}>
         <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)', marginBottom: '4px' }}>
-          {clockedIn ? 'Clocked In:' : 'Status:'}
+          {clockedIn ? t('dashboard.clockedIn') : t('dashboard.status')}
         </div>
         <div style={{ fontSize: '24px', fontWeight: '700', color: '#FFFFFF' }}>
-          {clockedIn ? (clockTime ? clockTime.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '--:--') : 'Clocked Out'}
+          {clockedIn ? (clockTime ? clockTime.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '--:--') : t('dashboard.clockedOut')}
         </div>
       </div>
 
@@ -64,7 +67,7 @@ const Dashboard = ({
       }}>
         <div>
           <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.5)', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '1px' }}>
-            Today
+            {t('dashboard.today')}
           </div>
           <div style={{ fontSize: '20px', fontWeight: '700', color: '#D4AF37' }}>
             {todayHours}h
@@ -72,7 +75,7 @@ const Dashboard = ({
         </div>
         <div>
           <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.5)', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '1px' }}>
-            This Week
+            {t('dashboard.thisWeek')}
           </div>
           <div style={{ fontSize: '20px', fontWeight: '700', color: '#D4AF37' }}>
             {weekHours}h
@@ -101,7 +104,7 @@ const Dashboard = ({
           boxShadow: clockedIn ? '0 4px 20px rgba(220,20,60,0.3)' : '0 4px 20px rgba(0,201,167,0.3)'
         }}
       >
-        {isLoading ? 'Processing...' : (clockedIn ? 'CLOCK OUT' : 'CLOCK IN')}
+        {isLoading ? t('dashboard.processing') : (clockedIn ? t('dashboard.clockOut') : t('dashboard.clockIn'))}
       </button>
     </div>
 
@@ -109,18 +112,18 @@ const Dashboard = ({
     <div style={glassCard}>
       <h3 style={sectionHeader}>
         <span style={{ fontSize: '18px' }}>📝</span>
-        TODAY'S WORK
+        {t('dashboard.todaysWork')}
       </h3>
 
       <div style={{ marginBottom: '16px' }}>
         <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)', marginBottom: '4px' }}>
-          No recent activity
+          {t('dashboard.noActivity')}
         </div>
         <div style={{ fontSize: '16px', fontWeight: '600', color: '#FFFFFF' }}>
-          No active jobs
+          {t('dashboard.noJobs')}
         </div>
         <div style={{ fontSize: '13px', color: '#D4AF37' }}>
-          Clock in to start
+          {t('dashboard.clockInToStart')}
         </div>
       </div>
 
@@ -145,7 +148,7 @@ const Dashboard = ({
           boxShadow: '0 4px 20px rgba(212,175,55,0.3)'
         }}
       >
-        LOG NEW WORK
+        {t('dashboard.logNewWork')}
         <ChevronRight size={18} />
       </button>
     </div>
@@ -154,7 +157,7 @@ const Dashboard = ({
     <div style={glassCard}>
       <h3 style={sectionHeader}>
         <span style={{ fontSize: '18px' }}>📊</span>
-        QUICK STATS
+        {t('dashboard.quickStats')}
       </h3>
 
       <div style={{
@@ -163,23 +166,24 @@ const Dashboard = ({
         gap: '12px'
       }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span style={{ fontSize: '13px', color: 'rgba(255,255,255,0.6)' }}>Jobs this week</span>
+          <span style={{ fontSize: '13px', color: 'rgba(255,255,255,0.6)' }}>{t('dashboard.jobsThisWeek')}</span>
           <span style={{ fontSize: '16px', fontWeight: '700', color: '#FFFFFF' }}>{jobsThisWeek}</span>
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span style={{ fontSize: '13px', color: 'rgba(255,255,255,0.6)' }}>Logs submitted</span>
+          <span style={{ fontSize: '13px', color: 'rgba(255,255,255,0.6)' }}>{t('dashboard.logsSubmitted')}</span>
           <span style={{ fontSize: '16px', fontWeight: '700', color: '#FFFFFF' }}>{logsSubmitted}</span>
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span style={{ fontSize: '13px', color: 'rgba(255,255,255,0.6)' }}>Next job</span>
+          <span style={{ fontSize: '13px', color: 'rgba(255,255,255,0.6)' }}>{t('dashboard.nextJob')}</span>
           <span style={{ fontSize: '14px', fontWeight: '600', color: '#FF1A1A' }}>
-            No recent site
+            {t('dashboard.noRecentSite')}
           </span>
         </div>
       </div>
     </div>
   </div>
-);
+  );
+};
 
 export default Dashboard;
 

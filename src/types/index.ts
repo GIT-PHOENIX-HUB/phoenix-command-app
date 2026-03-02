@@ -20,14 +20,25 @@ export interface TimeEntry {
   location?: { lat: number; lng: number } | null;
 }
 
+export interface WorkRow {
+  taskItem: string;
+  qty: number;
+  estTime: string;
+  description: string;
+}
+
 export interface DailyLogEntry {
   id: string;
   date: string;
-  customer: string;
-  jobNumber: string;
-  hours: number;
-  workCompleted: string;
-  issues: string;
+  technicianName: string;
+  jobAddress: string;
+  phase: 'rough-in' | 'trim-out';
+  completedWork: WorkRow[];
+  incompleteWork: WorkRow[];
+  notes: string;
+  materialNeeded: string;
+  techSignature: string;
+  leadSignature: string;
   photos: string[];
 }
 
@@ -44,10 +55,16 @@ export interface JobFile {
 }
 
 export interface DailyLogFormData {
-  customer: string;
-  jobNumber: string;
-  hours: number;
-  workCompleted: string;
-  issues: string;
+  date: string;
+  technicianName: string;
+  jobAddress: string;
+  phase: 'rough-in' | 'trim-out';
+  completedWork: WorkRow[];
+  incompleteWork: WorkRow[];
+  notes: string;
+  materialNeeded: string;
+  techSignature: string;
+  leadSignature: string;
+  photos: string[];
 }
 

@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+
+    <!-- PWA Meta Tags -->
+    <meta name="theme-color" content="#FF1A1A" />
+    <meta name="background-color" content="#0a0a0a" />
+    <meta name="description" content="Phoenix Electric Command Center - Time tracking, daily logs, and AI assistant" />
+
+    <!-- iOS PWA Meta Tags -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Phoenix" />
+    <link rel="apple-touch-icon" href="/phoenix-logo.png" />
+
+    <!-- Android PWA -->
+    <meta name="mobile-web-app-capable" content="yes" />
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="/phoenix-logo.png" />
+
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="/manifest.json" />
+
+    <!-- Preload fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+    <title>Phoenix Command</title>
+
+    <style>
+      /* Prevent pull-to-refresh on mobile */
+      html, body {
+        overscroll-behavior: none;
+        -webkit-overflow-scrolling: touch;
+      }
+
+      /* Safe area padding for notched devices */
+      body {
+        padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+      }
+
+      /* Splash screen styling */
+      #splash-loader {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: #0a0a0a;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+        transition: opacity 0.3s ease;
+      }
+
+      #splash-loader.hidden {
+        opacity: 0;
+        pointer-events: none;
+      }
+
+      .loader-content {
+        text-align: center;
+        color: white;
+        font-family: 'Cinzel', Georgia, serif;
+      }
+
+      .loader-spinner {
+        width: 40px;
+        height: 40px;
+        border: 3px solid rgba(255,26,26,0.2);
+        border-top-color: #FF1A1A;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin: 0 auto 20px;
+      }
+
+      @keyframes spin {
+        to { transform: rotate(360deg); }
+      }
+    </style>
+    <script type="module" crossorigin src="/assets/index-w4pwsatD.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-B3RP7e79.css">
+  </head>
+  <body>
+    <!-- Loading splash -->
+    <div id="splash-loader">
+      <div class="loader-content">
+        <div class="loader-spinner"></div>
+        <div style="font-size: 24px; letter-spacing: 3px;">PHOENIX</div>
+        <div style="font-size: 12px; color: #D4AF37; margin-top: 8px; letter-spacing: 2px;">COMMAND</div>
+      </div>
+    </div>
+
+    <div id="root"></div>
+
+
+    <!-- App init: splash screen + service worker (external for CSP compliance) -->
+    <script src="/app-init.js"></script>
+  </body>
+</html>
+
