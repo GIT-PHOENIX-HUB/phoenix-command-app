@@ -50,7 +50,7 @@ const WorkTable = ({ rows, onRowChange, onAddRow, t }) => (
         <input
           type="number"
           value={row.qty}
-          onChange={(e) => onRowChange(i, 'qty', e.target.value)}
+          onChange={(e) => onRowChange(i, 'qty', e.target.value === '' ? 0 : Number(e.target.value))}
           style={{ ...inputStyle, padding: '8px 10px', fontSize: '12px' }}
           min="0"
         />
@@ -59,7 +59,7 @@ const WorkTable = ({ rows, onRowChange, onAddRow, t }) => (
           value={row.estTime}
           onChange={(e) => onRowChange(i, 'estTime', e.target.value)}
           style={{ ...inputStyle, padding: '8px 10px', fontSize: '12px' }}
-          placeholder="1 hr"
+          placeholder={t('log.estTimePlaceholder')}
         />
         <input
           type="text"
@@ -108,6 +108,10 @@ const DailyLog = ({ userName = '', onSubmit, onNavigate }) => {
   };
 
   const handleSubmitLog = async () => {
+    if (!techSigned || !leadSigned) {
+      alert(t('log.signaturesRequired'));
+      return;
+    }
     try {
       setSubmitting(true);
       await onSubmit({
@@ -296,7 +300,7 @@ const DailyLog = ({ userName = '', onSubmit, onNavigate }) => {
                 style={{ width: '16px', height: '16px', cursor: 'pointer' }}
               />
               <span style={{ fontSize: '13px', color: techSigned ? '#00C9A7' : 'rgba(255,255,255,0.5)' }}>
-                {techSigned ? '✓ Signed' : userName || '—'}
+                {techSigned ? t('log.signed') : (userName || t('log.unsigned'))}
               </span>
             </label>
           </div>
@@ -319,7 +323,7 @@ const DailyLog = ({ userName = '', onSubmit, onNavigate }) => {
                 style={{ width: '16px', height: '16px', cursor: 'pointer' }}
               />
               <span style={{ fontSize: '13px', color: leadSigned ? '#00C9A7' : 'rgba(255,255,255,0.5)' }}>
-                {leadSigned ? '✓ Signed' : '—'}
+                {leadSigned ? t('log.signed') : t('log.unsigned')}
               </span>
             </label>
           </div>

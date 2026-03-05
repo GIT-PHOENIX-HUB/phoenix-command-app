@@ -70,20 +70,25 @@ export async function clockInOut({ action, location, note, token }) {
 /**
  * Submit daily work log
  * @param {object} log - Daily log data
- * @param {string} log.customer - Customer name
- * @param {string} log.jobNumber - Job number
- * @param {number} log.hours - Hours worked
- * @param {string} log.workCompleted - Description of work
- * @param {string} log.issues - Issues or follow-up notes
+ * @param {string} log.date - Log date
+ * @param {string} log.technicianName - Technician's display name
+ * @param {string} log.jobAddress - Job name / address
+ * @param {string} log.phase - 'rough-in' or 'trim-out'
+ * @param {object[]} log.completedWork - Completed work rows
+ * @param {object[]} log.incompleteWork - Incomplete work rows
+ * @param {string} log.notes - Notes on incomplete items
+ * @param {string} log.materialNeeded - Materials needed
+ * @param {string} log.techSignature - Technician signature value
+ * @param {string} log.leadSignature - Lead signature value
  * @param {string[]} log.photos - Photo URLs (optional)
  * @param {string} token - Access token
  */
 export async function submitDailyLog(log, token) {
-  if (log.workCompleted && log.workCompleted.length > MAX_DAILY_LOG_LENGTH) {
-    throw new Error(`Work completed exceeds maximum length of ${MAX_DAILY_LOG_LENGTH} characters`);
+  if (log.notes && log.notes.length > MAX_DAILY_LOG_LENGTH) {
+    throw new Error(`Notes field exceeds maximum length of ${MAX_DAILY_LOG_LENGTH} characters`);
   }
-  if (log.issues && log.issues.length > MAX_DAILY_LOG_LENGTH) {
-    throw new Error(`Issues field exceeds maximum length of ${MAX_DAILY_LOG_LENGTH} characters`);
+  if (log.materialNeeded && log.materialNeeded.length > MAX_DAILY_LOG_LENGTH) {
+    throw new Error(`Material needed field exceeds maximum length of ${MAX_DAILY_LOG_LENGTH} characters`);
   }
 
   const response = await fetch(`${API_BASE}/dailylog`, {

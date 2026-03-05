@@ -157,11 +157,17 @@ const PhoenixCommandApp = () => {
   const handleSubmitLog = async (logData) => {
     const token = await getApiToken();
     await submitDailyLog({
-      customer: logData.customer,
-      jobNumber: logData.jobNumber,
-      hours: logData.hours,
-      workCompleted: logData.workCompleted,
-      issues: logData.issues
+      date: logData.date,
+      technicianName: logData.technicianName,
+      jobAddress: logData.jobAddress,
+      phase: logData.phase,
+      completedWork: logData.completedWork,
+      incompleteWork: logData.incompleteWork,
+      notes: logData.notes,
+      materialNeeded: logData.materialNeeded,
+      techSignature: logData.techSignature,
+      leadSignature: logData.leadSignature,
+      photos: logData.photos
     }, token);
   };
 
