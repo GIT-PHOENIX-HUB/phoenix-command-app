@@ -4,7 +4,7 @@
 **Status:** APPROVED VISION — Ready for implementation planning
 **Location:** This is the permanent record. If anyone asks "what are we building?" — this is the answer.
 
----
+--
 
 ## The Mission
 
@@ -44,7 +44,7 @@ The company's vision — macro and micro — should be shared with every tech. N
 ### The Brain
 
 ```
-Mac Studio M3 Ultra (192GB unified memory)
+Mac Studio M3 Ultra (96GB unified memory)
 ├── Phoenix Gateway Service (receives all messages)
 ├── Session Store (per-user private conversations)
 ├── Knowledge Base (shared Phoenix knowledge)
@@ -380,7 +380,7 @@ This is a critical feature, not a nice-to-have. Design the system to support voi
 ## Technology Stack
 
 ### Mac Studio (The Brain)
-- M3 Ultra, 192GB unified memory
+- M3 Ultra, 96GB unified memory
 - Node.js gateway service
 - Session store (per-user, encrypted at rest)
 - Knowledge base (Phoenix procedures, pricing, NEC code)
