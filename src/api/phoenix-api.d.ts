@@ -11,12 +11,17 @@ export function clockInOut(options: {
 
 export function submitDailyLog(
   log: {
-    customer: string;
-    jobNumber: string;
-    hours: number;
-    workCompleted: string;
-    issues: string;
-    photos?: string[];
+    date: string;
+    technicianName: string;
+    jobAddress: string;
+    phase: 'rough-in' | 'trim-out';
+    completedWork: Array<{ taskItem: string; qty: number; estTime: string; description: string }>;
+    incompleteWork: Array<{ taskItem: string; qty: number; estTime: string; description: string }>;
+    notes: string;
+    materialNeeded: string;
+    techSignature: string;
+    leadSignature: string;
+    photos: string[];
   },
   token: string
 ): Promise<any>;

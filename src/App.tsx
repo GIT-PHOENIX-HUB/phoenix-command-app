@@ -3,6 +3,7 @@ import { InteractionStatus } from '@azure/msal-browser';
 import { useAuth } from './hooks/useAuth';
 import { clockInOut, submitDailyLog, askPhoenixAI, getCurrentLocation } from './api/phoenix-api';
 import { colors, typography } from './theme/tokens';
+import { LanguageProvider } from './i18n/LanguageContext';
 
 // Layout
 import Header from './components/layout/Header';
@@ -124,15 +125,21 @@ const PhoenixCommandApp: React.FC = () => {
     }
   };
 
-  // Daily log submit handler
+  // Daily log submit handler — sends full paper-form contract
   const handleSubmitLog = async (logData: DailyLogFormData) => {
     const token = await getApiToken();
     await submitDailyLog({
-      customer: logData.customer,
-      jobNumber: logData.jobNumber,
-      hours: logData.hours,
-      workCompleted: logData.workCompleted,
-      issues: logData.issues,
+      date: logData.date,
+      technicianName: logData.technicianName,
+      jobAddress: logData.jobAddress,
+      phase: logData.phase,
+      completedWork: logData.completedWork,
+      incompleteWork: logData.incompleteWork,
+      notes: logData.notes,
+      materialNeeded: logData.materialNeeded,
+      techSignature: logData.techSignature,
+      leadSignature: logData.leadSignature,
+      photos: logData.photos,
     }, token);
   };
 
@@ -181,6 +188,7 @@ const PhoenixCommandApp: React.FC = () => {
   }
 
   return (
+    <LanguageProvider>
     <div style={{ fontFamily: typography.fontPrimary }}>
       <Header
         userName={userName}
@@ -214,8 +222,7 @@ const PhoenixCommandApp: React.FC = () => {
       {currentScreen === 'teams' && <TeamsScreen />}
       {currentScreen === 'dailylog' && (
         <DailyLogScreen
-          customers={customers}
-          jobs={jobs}
+          userName={userName}
           onSubmit={handleSubmitLog}
           onNavigate={setCurrentScreen}
         />
@@ -230,6 +237,7 @@ const PhoenixCommandApp: React.FC = () => {
         onSend={handleChatSend}
       />
     </div>
+    </LanguageProvider>
   );
 };
 

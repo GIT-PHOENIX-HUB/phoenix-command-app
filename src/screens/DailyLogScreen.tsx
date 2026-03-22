@@ -1,40 +1,141 @@
-import React, { useState } from 'react';
-import { MapPin, Camera } from 'lucide-react';
-import { colors, borderRadius, touchTarget, spacing } from '../theme/tokens';
+import React, { useState, useContext } from 'react';
+import { colors } from '../theme/tokens';
 import { glassCard, inputStyle, screenContainer, redGlowOverlay, screenTitle, sectionHeader, labelStyle, primaryButton } from '../theme/styles';
-import { MAX_DAILY_LOG_LENGTH } from '../api/phoenix-api';
-import type { Screen, DailyLogFormData } from '../types';
+import { LanguageContext } from '../i18n/LanguageContext';
+import type { Screen, DailyLogFormData, WorkRow } from '../types';
 
 interface DailyLogScreenProps {
-  customers: string[];
-  jobs: string[];
+  userName?: string;
   onSubmit: (logData: DailyLogFormData) => Promise<void>;
   onNavigate: (screen: Screen) => void;
 }
 
-const DailyLogScreen: React.FC<DailyLogScreenProps> = ({ customers, jobs, onSubmit, onNavigate }) => {
-  const [logData, setLogData] = useState<DailyLogFormData>({
-    customer: '',
-    jobNumber: '',
-    hours: 0,
-    workCompleted: '',
-    issues: '',
-  });
+const createEmptyRow = (): WorkRow => ({ taskItem: '', qty: 0, estTime: '', description: '' });
+
+interface WorkTableProps {
+  rows: WorkRow[];
+  onRowChange: (index: number, field: keyof WorkRow, value: string | number) => void;
+  onAddRow: () => void;
+  t: (key: string) => string;
+}
+
+const WorkTable: React.FC<WorkTableProps> = ({ rows, onRowChange, onAddRow, t }) => (
+  <div>
+    <div style={{
+      display: 'grid',
+      gridTemplateColumns: '28px 1fr 60px 80px 1fr',
+      gap: '6px',
+      marginBottom: '6px'
+    }}>
+      <div style={{ ...labelStyle, textAlign: 'center' as const }}>#</div>
+      <div style={labelStyle}>{t('log.taskItem')}</div>
+      <div style={labelStyle}>{t('log.qty')}</div>
+      <div style={labelStyle}>{t('log.estTime')}</div>
+      <div style={labelStyle}>{t('log.description')}</div>
+    </div>
+    {rows.map((row, i) => (
+      <div key={i} style={{
+        display: 'grid',
+        gridTemplateColumns: '28px 1fr 60px 80px 1fr',
+        gap: '6px',
+        marginBottom: '6px'
+      }}>
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          fontSize: '12px',
+          color: 'rgba(255,255,255,0.4)',
+          fontWeight: '600'
+        }}>{i + 1}</div>
+        <input
+          type="text"
+          value={row.taskItem}
+          onChange={(e) => onRowChange(i, 'taskItem', e.target.value)}
+          style={{ ...inputStyle, padding: '8px 10px', fontSize: '12px' }}
+        />
+        <input
+          type="number"
+          value={row.qty}
+          onChange={(e) => onRowChange(i, 'qty', e.target.value === '' ? 0 : Number(e.target.value))}
+          style={{ ...inputStyle, padding: '8px 10px', fontSize: '12px' }}
+          min="0"
+        />
+        <input
+          type="text"
+          value={row.estTime}
+          onChange={(e) => onRowChange(i, 'estTime', e.target.value)}
+          style={{ ...inputStyle, padding: '8px 10px', fontSize: '12px' }}
+          placeholder={t('log.estTimePlaceholder')}
+        />
+        <input
+          type="text"
+          value={row.description}
+          onChange={(e) => onRowChange(i, 'description', e.target.value)}
+          style={{ ...inputStyle, padding: '8px 10px', fontSize: '12px' }}
+        />
+      </div>
+    ))}
+    <button
+      onClick={onAddRow}
+      style={{
+        marginTop: '8px',
+        padding: '8px 16px',
+        background: 'rgba(212,175,55,0.15)',
+        border: '1px solid rgba(212,175,55,0.4)',
+        borderRadius: '6px',
+        color: '#D4AF37',
+        fontSize: '12px',
+        fontWeight: '600',
+        cursor: 'pointer',
+        letterSpacing: '0.5px'
+      }}
+    >
+      + {t('log.addRow')}
+    </button>
+  </div>
+);
+
+const DailyLogScreen: React.FC<DailyLogScreenProps> = ({ userName = '', onSubmit, onNavigate }) => {
+  const { t } = useContext(LanguageContext);
+  const today = new Date().toLocaleDateString('en-US', { year: 'numeric', month: '2-digit', day: '2-digit' });
+
+  const [jobAddress, setJobAddress] = useState('');
+  const [phase, setPhase] = useState<'rough-in' | 'trim-out'>('rough-in');
+  const [completedWork, setCompletedWork] = useState<WorkRow[]>(Array.from({ length: 5 }, createEmptyRow));
+  const [incompleteWork, setIncompleteWork] = useState<WorkRow[]>(Array.from({ length: 2 }, createEmptyRow));
+  const [notes, setNotes] = useState('');
+  const [materialNeeded, setMaterialNeeded] = useState('');
+  const [techSigned, setTechSigned] = useState(false);
+  const [leadSigned, setLeadSigned] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
+  const updateRow = (setter: React.Dispatch<React.SetStateAction<WorkRow[]>>) =>
+    (index: number, field: keyof WorkRow, value: string | number) => {
+      setter(prev => prev.map((row, i) => i === index ? { ...row, [field]: value } : row));
+    };
+
   const handleSubmitLog = async () => {
-    if (!logData.customer || !logData.jobNumber) {
-      alert('Please select a customer and job number.');
-      return;
-    }
-    if (!logData.workCompleted.trim()) {
-      alert('Please describe the work completed.');
+    if (!techSigned || !leadSigned) {
+      alert(t('log.signaturesRequired'));
       return;
     }
     try {
       setSubmitting(true);
-      await onSubmit(logData);
-      alert('Log submitted successfully!');
+      await onSubmit({
+        date: today,
+        technicianName: userName,
+        jobAddress,
+        phase,
+        completedWork,
+        incompleteWork,
+        notes,
+        materialNeeded,
+        techSignature: techSigned ? 'signed' : '',
+        leadSignature: leadSigned ? 'signed' : '',
+        photos: []
+      });
+      alert(t('log.submit') + ' ✓');
       onNavigate('dashboard');
     } catch (error) {
       console.error('Submit failed:', error);
@@ -44,211 +145,120 @@ const DailyLogScreen: React.FC<DailyLogScreenProps> = ({ customers, jobs, onSubm
     }
   };
 
+  const phaseButtonStyle = (isActive: boolean): React.CSSProperties => ({
+    flex: 1,
+    padding: '10px',
+    background: isActive ? 'linear-gradient(135deg, #D4AF37, #B8960B)' : 'rgba(255,255,255,0.05)',
+    border: isActive ? 'none' : '1px solid rgba(255,255,255,0.2)',
+    borderRadius: '8px',
+    color: isActive ? '#1a1a1a' : 'rgba(255,255,255,0.7)',
+    fontSize: '13px',
+    fontWeight: '700',
+    cursor: 'pointer',
+    letterSpacing: '0.5px',
+    textTransform: 'uppercase'
+  });
+
   return (
     <div style={screenContainer}>
       <div style={redGlowOverlay} />
+      <h2 style={{ ...screenTitle, marginBottom: '8px' }}>{t('log.title')}</h2>
 
-      <h2 style={{ ...screenTitle, marginBottom: '8px' }}>LOG TODAY'S WORK</h2>
-
+      {/* Instructions */}
       <div style={{
-        color: colors.accent,
-        fontSize: '14px',
-        marginBottom: '24px',
+        background: 'rgba(212,175,55,0.08)',
+        border: '1px solid rgba(212,175,55,0.2)',
+        borderRadius: '10px',
+        padding: '14px',
+        marginBottom: '20px',
         position: 'relative',
-        zIndex: 1,
+        zIndex: 1
       }}>
-        {new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+        {[1,2,3,4,5,6,7,8].map(n => (
+          <div key={n} style={{ fontSize: '11px', color: 'rgba(255,255,255,0.55)', marginBottom: '4px' }}>
+            {n}. {t(`log.instructions.${n}`)}
+          </div>
+        ))}
       </div>
 
-      {/* Location & Job */}
+      {/* Header */}
       <div style={glassCard}>
-        <h3 style={sectionHeader}>
-          <MapPin size={18} color={colors.accent} />
-          LOCATION & JOB
-        </h3>
-
-        <div style={{ display: 'flex', flexDirection: 'column', gap: `${spacing.md}px` }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
           <div>
-            <label style={labelStyle}>Customer/Site</label>
-            <select
-              value={logData.customer}
-              onChange={(e) => setLogData({ ...logData, customer: e.target.value })}
-              style={inputStyle}
-            >
-              <option value="">Select customer...</option>
-              {customers.length > 0 ? customers.map((c, i) => (
-                <option key={i} value={c}>{c}</option>
-              )) : (
-                <option disabled>No customers loaded</option>
-              )}
-            </select>
+            <label style={labelStyle}>{t('log.techName')}</label>
+            <input type="text" value={userName} readOnly style={{ ...inputStyle, color: 'rgba(255,255,255,0.5)', cursor: 'default' }} />
           </div>
-
           <div>
-            <label style={labelStyle}>Job Number</label>
-            <select
-              value={logData.jobNumber}
-              onChange={(e) => setLogData({ ...logData, jobNumber: e.target.value })}
-              style={inputStyle}
-            >
-              <option value="">Select job...</option>
-              {jobs.length > 0 ? jobs.map((j, i) => (
-                <option key={i} value={j}>{j}</option>
-              )) : (
-                <option disabled>No jobs loaded</option>
-              )}
-            </select>
+            <label style={labelStyle}>{t('log.date')}</label>
+            <input type="text" value={today} readOnly style={{ ...inputStyle, color: 'rgba(255,255,255,0.5)', cursor: 'default' }} />
           </div>
-
           <div>
-            <label style={labelStyle}>Hours Worked</label>
-            <input
-              type="number"
-              step="0.25"
-              inputMode="numeric"
-              value={logData.hours}
-              onChange={(e) => setLogData({ ...logData, hours: parseFloat(e.target.value) })}
-              style={inputStyle}
-            />
-            <div style={{
-              fontSize: '11px',
-              color: colors.textTertiary,
-              marginTop: '6px',
-            }}>
-              Auto-calculated from clock times
+            <label style={labelStyle}>{t('log.jobAddress')}</label>
+            <input type="text" value={jobAddress} onChange={(e) => setJobAddress(e.target.value)} style={inputStyle} />
+          </div>
+          <div>
+            <label style={labelStyle}>{t('log.phase')}</label>
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <button style={phaseButtonStyle(phase === 'rough-in')} onClick={() => setPhase('rough-in')}>{t('log.roughIn')}</button>
+              <button style={phaseButtonStyle(phase === 'trim-out')} onClick={() => setPhase('trim-out')}>{t('log.trimOut')}</button>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Work Completed */}
+      {/* Completed Work */}
       <div style={glassCard}>
-        <h3 style={sectionHeader}>
-          <span style={{ fontSize: '18px' }}>📝</span>
-          WORK COMPLETED
-        </h3>
-        <textarea
-          placeholder="Describe the work you completed today..."
-          rows={6}
-          value={logData.workCompleted}
-          onChange={(e) => setLogData({ ...logData, workCompleted: e.target.value })}
-          maxLength={MAX_DAILY_LOG_LENGTH}
-          style={{
-            ...inputStyle,
-            fontFamily: 'inherit',
-            resize: 'vertical',
-          }}
-        />
+        <h3 style={sectionHeader}><span style={{ fontSize: '18px' }}>✅</span> {t('log.completedWork')}</h3>
+        <WorkTable rows={completedWork} onRowChange={updateRow(setCompletedWork)} onAddRow={() => setCompletedWork(prev => [...prev, createEmptyRow()])} t={t} />
       </div>
 
-      {/* Photos */}
+      {/* Incomplete Work */}
+      <div style={{ ...glassCard, background: 'linear-gradient(165deg, rgba(255,200,0,0.06) 0%, rgba(255,255,255,0.02) 50%, rgba(255,200,0,0.04) 100%)', border: '1px solid rgba(255,200,0,0.2)' }}>
+        <h3 style={{ ...sectionHeader, color: '#FFD700' }}><span style={{ fontSize: '18px' }}>⚠️</span> {t('log.incompleteWork')}</h3>
+        <WorkTable rows={incompleteWork} onRowChange={updateRow(setIncompleteWork)} onAddRow={() => setIncompleteWork(prev => [...prev, createEmptyRow()])} t={t} />
+      </div>
+
+      {/* Notes */}
       <div style={glassCard}>
-        <h3 style={sectionHeader}>
-          <Camera size={18} color={colors.accent} />
-          MATERIALS & PHOTOS
-        </h3>
-        <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-          <button style={{
-            padding: '14px 20px',
-            background: colors.glassWhite,
-            border: `1px dashed ${colors.borderGold}`,
-            borderRadius: `${borderRadius.lg}px`,
-            fontSize: '13px',
-            fontWeight: '600',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            gap: `${spacing.sm}px`,
-            color: colors.text,
-            transition: 'all 0.2s ease',
-            minHeight: touchTarget.minHeight,
-          }}>
-            📷 Take Photo
-          </button>
-          <button style={{
-            padding: '14px 20px',
-            background: colors.glassWhite,
-            border: `1px dashed ${colors.borderGold}`,
-            borderRadius: `${borderRadius.lg}px`,
-            fontSize: '13px',
-            fontWeight: '600',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            gap: `${spacing.sm}px`,
-            color: colors.text,
-            transition: 'all 0.2s ease',
-            minHeight: touchTarget.minHeight,
-          }}>
-            📎 Upload
-          </button>
+        <div style={{ display: 'grid', gridTemplateColumns: '3fr 2fr', gap: '16px' }}>
+          <div>
+            <label style={labelStyle}>{t('log.notes')}</label>
+            <textarea rows={5} value={notes} onChange={(e) => setNotes(e.target.value)} style={{ ...inputStyle, fontFamily: 'inherit', resize: 'vertical' }} />
+          </div>
+          <div>
+            <label style={labelStyle}>{t('log.materialNeeded')}</label>
+            <textarea rows={5} value={materialNeeded} onChange={(e) => setMaterialNeeded(e.target.value)} style={{ ...inputStyle, fontFamily: 'inherit', resize: 'vertical' }} />
+          </div>
         </div>
       </div>
 
-      {/* Issues */}
+      {/* Signatures */}
       <div style={glassCard}>
-        <h3 style={sectionHeader}>
-          <span style={{ fontSize: '18px' }}>⚠️</span>
-          ISSUES / FOLLOW-UP
-        </h3>
-        <textarea
-          placeholder="Any issues or follow-up needed?"
-          rows={4}
-          value={logData.issues}
-          onChange={(e) => setLogData({ ...logData, issues: e.target.value })}
-          maxLength={MAX_DAILY_LOG_LENGTH}
-          style={{
-            ...inputStyle,
-            fontFamily: 'inherit',
-            resize: 'vertical',
-            borderColor: colors.borderRedHover,
-          }}
-        />
+        <h3 style={sectionHeader}><span style={{ fontSize: '18px' }}>✍️</span> {t('log.signatures')}</h3>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+          <div>
+            <label style={labelStyle}>{t('log.techSignature')}</label>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', padding: '12px', background: 'rgba(255,255,255,0.04)', border: techSigned ? '1px solid rgba(0,201,167,0.5)' : '1px solid rgba(255,255,255,0.15)', borderRadius: '8px' }}>
+              <input type="checkbox" checked={techSigned} onChange={(e) => setTechSigned(e.target.checked)} style={{ width: '16px', height: '16px', cursor: 'pointer' }} />
+              <span style={{ fontSize: '13px', color: techSigned ? '#00C9A7' : 'rgba(255,255,255,0.5)' }}>{techSigned ? t('log.signed') : (userName || t('log.unsigned'))}</span>
+            </label>
+          </div>
+          <div>
+            <label style={labelStyle}>{t('log.leadSignature')}</label>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', padding: '12px', background: 'rgba(255,255,255,0.04)', border: leadSigned ? '1px solid rgba(0,201,167,0.5)' : '1px solid rgba(255,255,255,0.15)', borderRadius: '8px' }}>
+              <input type="checkbox" checked={leadSigned} onChange={(e) => setLeadSigned(e.target.checked)} style={{ width: '16px', height: '16px', cursor: 'pointer' }} />
+              <span style={{ fontSize: '13px', color: leadSigned ? '#00C9A7' : 'rgba(255,255,255,0.5)' }}>{leadSigned ? t('log.signed') : t('log.unsigned')}</span>
+            </label>
+          </div>
+        </div>
       </div>
 
-      {/* Action Buttons */}
-      <div style={{
-        display: 'flex',
-        gap: '12px',
-        position: 'relative',
-        zIndex: 1,
-      }}>
-        <button
-          style={{
-            flex: 1,
-            padding: '14px',
-            background: colors.glassWhite,
-            border: `1px solid ${colors.borderWhiteMed}`,
-            color: colors.text,
-            borderRadius: `${borderRadius.lg}px`,
-            fontSize: '13px',
-            fontWeight: '700',
-            cursor: 'pointer',
-            textTransform: 'uppercase',
-            letterSpacing: '0.5px',
-            transition: 'all 0.2s ease',
-            minHeight: touchTarget.minHeight,
-          }}
-        >
-          SAVE DRAFT
-        </button>
-        <button
-          onClick={handleSubmitLog}
-          disabled={submitting}
-          style={{
-            ...primaryButton,
-            flex: 2,
-            padding: '14px',
-            opacity: submitting ? 0.7 : 1,
-            cursor: submitting ? 'wait' : 'pointer',
-          }}
-        >
-          {submitting ? 'SUBMITTING...' : 'SUBMIT LOG'}
-        </button>
-      </div>
+      {/* Submit */}
+      <button onClick={handleSubmitLog} disabled={submitting} style={{ ...primaryButton, width: '100%', padding: '16px', opacity: submitting ? 0.7 : 1, cursor: submitting ? 'wait' : 'pointer', marginBottom: '20px' }}>
+        {submitting ? '...' : t('log.submit')}
+      </button>
     </div>
   );
 };
 
 export default DailyLogScreen;
-
