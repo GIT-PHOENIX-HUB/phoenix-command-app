@@ -1,7 +1,9 @@
-import React, { useState, useContext } from 'react';
+import React, { useState, useContext, useCallback } from 'react';
 import { colors } from '../theme/tokens';
 import { glassCard, inputStyle, screenContainer, redGlowOverlay, screenTitle, sectionHeader, labelStyle, primaryButton } from '../theme/styles';
 import { LanguageContext } from '../i18n/LanguageContext';
+import VoiceDictationButton from '../components/VoiceDictationButton';
+import { dictationBlocksSubmit, dictationButtonIsDisabled } from '../hooks/voiceDictationPolicy';
 import type { Screen, DailyLogFormData, WorkRow } from '../types';
 
 interface DailyLogScreenProps {
@@ -109,6 +111,19 @@ const DailyLogScreen: React.FC<DailyLogScreenProps> = ({ userName = '', onSubmit
   const [techSigned, setTechSigned] = useState(false);
   const [leadSigned, setLeadSigned] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [activeDictation, setActiveDictation] = useState<'notes' | 'materials' | null>(null);
+
+  const updateActiveDictation = useCallback((field: 'notes' | 'materials', active: boolean) => {
+    setActiveDictation(current => active ? field : current === field ? null : current);
+  }, []);
+  const updateNotesDictation = useCallback(
+    (active: boolean) => updateActiveDictation('notes', active),
+    [updateActiveDictation],
+  );
+  const updateMaterialsDictation = useCallback(
+    (active: boolean) => updateActiveDictation('materials', active),
+    [updateActiveDictation],
+  );
 
   const updateRow = (setter: React.Dispatch<React.SetStateAction<WorkRow[]>>) =>
     (index: number, field: keyof WorkRow, value: string | number) => {
@@ -116,6 +131,10 @@ const DailyLogScreen: React.FC<DailyLogScreenProps> = ({ userName = '', onSubmit
     };
 
   const handleSubmitLog = async () => {
+    if (dictationBlocksSubmit(activeDictation)) {
+      alert(t('log.voiceFinishBeforeSubmit'));
+      return;
+    }
     if (!techSigned || !leadSigned) {
       alert(t('log.signaturesRequired'));
       return;
@@ -222,11 +241,25 @@ const DailyLogScreen: React.FC<DailyLogScreenProps> = ({ userName = '', onSubmit
       <div style={glassCard}>
         <div style={{ display: 'grid', gridTemplateColumns: '3fr 2fr', gap: '16px' }}>
           <div>
-            <label style={labelStyle}>{t('log.notes')}</label>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', flexWrap: 'wrap' }}>
+              <label style={labelStyle}>{t('log.notes')}</label>
+              <VoiceDictationButton
+                onText={(text) => setNotes(prev => (prev && !prev.endsWith(' ') ? prev + ' ' : prev) + text)}
+                disabled={dictationButtonIsDisabled(activeDictation, 'notes', submitting)}
+                onActiveChange={updateNotesDictation}
+              />
+            </div>
             <textarea rows={5} value={notes} onChange={(e) => setNotes(e.target.value)} style={{ ...inputStyle, fontFamily: 'inherit', resize: 'vertical' }} />
           </div>
           <div>
-            <label style={labelStyle}>{t('log.materialNeeded')}</label>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', flexWrap: 'wrap' }}>
+              <label style={labelStyle}>{t('log.materialNeeded')}</label>
+              <VoiceDictationButton
+                onText={(text) => setMaterialNeeded(prev => (prev && !prev.endsWith(' ') ? prev + ' ' : prev) + text)}
+                disabled={dictationButtonIsDisabled(activeDictation, 'materials', submitting)}
+                onActiveChange={updateMaterialsDictation}
+              />
+            </div>
             <textarea rows={5} value={materialNeeded} onChange={(e) => setMaterialNeeded(e.target.value)} style={{ ...inputStyle, fontFamily: 'inherit', resize: 'vertical' }} />
           </div>
         </div>
@@ -254,8 +287,20 @@ const DailyLogScreen: React.FC<DailyLogScreenProps> = ({ userName = '', onSubmit
       </div>
 
       {/* Submit */}
-      <button onClick={handleSubmitLog} disabled={submitting} style={{ ...primaryButton, width: '100%', padding: '16px', opacity: submitting ? 0.7 : 1, cursor: submitting ? 'wait' : 'pointer', marginBottom: '20px' }}>
-        {submitting ? '...' : t('log.submit')}
+      <button
+        onClick={handleSubmitLog}
+        disabled={submitting || dictationBlocksSubmit(activeDictation)}
+        title={dictationBlocksSubmit(activeDictation) ? t('log.voiceFinishBeforeSubmit') : undefined}
+        style={{
+          ...primaryButton,
+          width: '100%',
+          padding: '16px',
+          opacity: submitting || dictationBlocksSubmit(activeDictation) ? 0.7 : 1,
+          cursor: submitting ? 'wait' : dictationBlocksSubmit(activeDictation) ? 'not-allowed' : 'pointer',
+          marginBottom: '20px',
+        }}
+      >
+        {submitting ? '...' : dictationBlocksSubmit(activeDictation) ? t('log.voiceFinishing') : t('log.submit')}
       </button>
     </div>
   );
