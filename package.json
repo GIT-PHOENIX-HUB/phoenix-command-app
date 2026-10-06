@@ -11,7 +11,8 @@
     "preview:lan": "vite preview --host 0.0.0.0 --port 4173",
     "typecheck": "echo 'No TypeScript in this project - skipping'",
     "lint": "echo 'No linter configured - skipping'",
-    "test": "node --test"
+    "test": "node --test",
+    "verify:production": "node build/verify-production-build.js"
   },
   "dependencies": {
     "@azure/msal-browser": "^4.27.0",

@@ -9,7 +9,14 @@ const MAX_QUERY_LENGTH = 4000;
 const MAX_DAILY_LOG_LENGTH = 10000;
 const MAX_CLOCK_NOTE_LENGTH = 500;
 
-const API_BASE = import.meta.env.VITE_API_BASE || "http://127.0.0.1:9120";
+const configuredApiBase = String(import.meta.env.VITE_API_BASE || "")
+  .trim()
+  .replace(/\/+$/, "");
+if (!configuredApiBase && !import.meta.env.DEV) {
+  throw new Error("VITE_API_BASE is required for production builds");
+}
+const API_BASE = configuredApiBase
+  || (import.meta.env.DEV ? "http://127.0.0.1:9120" : "");
 const FUNCTION_KEY = import.meta.env.VITE_FUNCTION_KEY || "";
 const API_SCOPE = import.meta.env.VITE_API_SCOPE
   || `api://${import.meta.env.VITE_AZURE_CLIENT_ID || "8b78f443-e000-4689-ad57-71e4e616960f"}/.default`;
@@ -187,4 +194,3 @@ export function getCurrentLocation() {
 }
 
 export { MAX_QUERY_LENGTH, MAX_DAILY_LOG_LENGTH, MAX_CLOCK_NOTE_LENGTH };
-
