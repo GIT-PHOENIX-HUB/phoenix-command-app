@@ -6,7 +6,6 @@
 import type { DailyHuddle, KnowledgeItem, KnowledgeBuilderStats } from '../types/knowledge-builder';
 
 const API_BASE = import.meta.env.VITE_API_BASE || "https://phoenix-command-func.azurewebsites.net/api";
-const FUNCTION_KEY = import.meta.env.VITE_FUNCTION_KEY || "";
 const IS_DEV = import.meta.env.DEV;
 
 // ============================================================================
@@ -100,7 +99,6 @@ const MOCK_DATA: DailyHuddle = {
 function buildHeaders(token: string | null): Record<string, string> {
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
   if (token) headers['Authorization'] = `Bearer ${token}`;
-  if (FUNCTION_KEY) headers['x-functions-key'] = FUNCTION_KEY;
   return headers;
 }
 
