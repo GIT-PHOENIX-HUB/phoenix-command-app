@@ -120,12 +120,20 @@ export async function submitDailyLog(log, token) {
 }
 
 /**
- * Send message to Phoenix AI orchestrator
+ * Send message to Phoenix AI orchestrator via the /v3/chat browser bridge.
+ *
+ * Runtime contract (phoenix.runtime.app:gateway /v3/chat):
+ *   Request  → POST {API_BASE}/v3/chat  { message: string }
+ *   Response ← { text: string, ...rest }
+ *   Returns  → { result: string, ...rest }   (result = text for backward compat)
+ *
  * @param {string} query - User's message
- * @param {string[]} agents - Agents to use (default: knowledge_keeper)
- * @param {string} token - Access token (optional)
+ * @param {string[]} _agents - Reserved for future routing; not forwarded to the
+ *   runtime yet (/v3/chat has no agents parameter at the M-1 boundary).
+ * @param {string|null} token - ****** (optional; /v3/chat is a tokenless
+ *   browser bridge, but the header is forwarded if provided)
  */
-export async function askPhoenixAI(query, agents = ["knowledge_keeper"], token = null) {
+export async function askPhoenixAI(query, _agents = ["knowledge_keeper"], token = null) {
   if (query.length > MAX_QUERY_LENGTH) {
     throw new Error(`Query exceeds maximum length of ${MAX_QUERY_LENGTH} characters`);
   }

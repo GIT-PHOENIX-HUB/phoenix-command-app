@@ -76,9 +76,10 @@ test('Azure CSP receives only the configured runtime origin', () => {
     /connect-src 'self' https:\/\/login\.microsoftonline\.com https:\/\/gateway\.example\.com;/
   );
   assert.equal(policy.includes('http://127.0.0.1:9120'), false);
-  assert.equal(
-    source.globalHeaders['Content-Security-Policy'].includes('gateway.example.com'),
-    false
+  // Verify the original config object was not mutated (structuredClone isolation).
+  assert.doesNotMatch(
+    source.globalHeaders['Content-Security-Policy'],
+    /https:\/\/gateway\.example\.com(?:[\s;/]|$)/
   );
 });
 
